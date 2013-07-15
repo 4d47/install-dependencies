@@ -1,0 +1,17 @@
+
+# The extra lightweight dependencies installer
+
+You define your dependencies in a file named `dependencies.json`
+at top of your project. This file is an object with
+keys defining what folder has to be created and values is a url pointing to
+a third-party release. The fragment part in the url can added to
+point a subdirectory in the release (eg a src/ folder).
+
+Currently only zip releases are supported.
+
+Example of a dependencies.json file
+ 
+     {
+       "library/Zend": "https://github.com/zendframework/zf1/archive/release-1.12.3.zip#library/Zend",
+       "modules/smoke-test": "https://bitbucket.org/mat/smoke-test/get/e519fae15059.zip#smoke-test"
+     }
