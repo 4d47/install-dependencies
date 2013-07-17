@@ -1,6 +1,6 @@
 #!/usr/bin/env php
 <?php
-define('CACHEDIR', getenv('DEPCACHEDIR') ?: "{$_SERVER['HOME']}/.install-dependencies/");
+define('INSTALL_DEPENDENCIES_HOME', getenv('INSTALL_DEPENDENCIES_HOME') ?: "{$_SERVER['HOME']}/.install-dependencies");
 define('DEPFILE', 'dependencies.json');
 
 install_dependencies();
@@ -30,8 +30,9 @@ function install_dependency($url, $dest)
 
 function cache_release($url)
 {
-  $cachedir = CACHEDIR . hash_url($url);
+  $cachedir = INSTALL_DEPENDENCIES_HOME . '/' . hash_url($url);
   if (!file_exists($cachedir)) {
+    mkdir($cachedir, 0755, true);
     unlink(unzip(download($url), $cachedir));
     install_dependencies("$cachedir/");
   }
@@ -52,7 +53,7 @@ function install_link($target, $dest)
     unlink($dest);
   if (!file_exists(dirname($dest)))
     mkdir(dirname($dest), 0755, true);
-  symlink($target, $dest);
+  symlink(realpath($target), $dest);
 }
 
 
@@ -78,7 +79,6 @@ function download($url)
 
 function unzip($filename, $destination)
 {
-  mkdir($destination, 0755, true);
   $zip = new ZipArchive();
   $zip->open($filename);
   $zip->extractTo($destination);
