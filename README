@@ -7,7 +7,7 @@ folders in your project that needs to be created and values pointing to
 urls of third-party release artifacts.  The fragment part in the url
 can added to point a subdirectory in the release (eg a src/ folder).
 
-Then run `install-dependencies.php`.
+Then run `install-dependencies`.
 
 Currently only zip releases are supported.
 

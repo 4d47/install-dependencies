@@ -3,86 +3,110 @@
 define('INSTALL_DEPENDENCIES_HOME', getenv('INSTALL_DEPENDENCIES_HOME') ?: "{$_SERVER['HOME']}/.install-dependencies");
 define('DEPFILE', 'dependencies.json');
 
+set_error_handler('exception_error_handler');
+set_exception_handler('exit_exception_handler');
+
 install_dependencies();
 
 
 function install_dependencies($basedir = '')
 {
-  foreach (read_dependeciesfile($basedir . DEPFILE) as $dest => $url) {
-    install_dependency($url, "$basedir$dest");
-  }
+    foreach (read_dependeciesfile($basedir . DEPFILE) as $dest => $url) {
+        install_dependency($url, "$basedir$dest");
+    }
 }
 
 
 function read_dependeciesfile($filename)
 {
-  return file_exists($filename) ? json_decode(file_get_contents($filename)) : array();
+    $data = file_exists($filename) ? read_json($filename) : new stdClass();
+    if (!is_object($data))
+        throw new Exception(sprintf("Invalid json decoding of %s must be an object but got %s.", $filename, gettype($data)));
+    return $data;
 }
 
 
 function install_dependency($url, $dest)
 {
-  $releasedir = skip_initial_directory(cache_release($url));
-  $subpath = parse_url($url, PHP_URL_FRAGMENT);
-  install_link("$releasedir/$subpath", $dest);
+    $releasedir = skip_initial_directory(cache_release($url));
+    $subpath = parse_url($url, PHP_URL_FRAGMENT);
+    install_link("$releasedir/$subpath", $dest);
 }
 
 
 function cache_release($url)
 {
-  $cachedir = INSTALL_DEPENDENCIES_HOME . '/' . hash_url($url);
-  if (!file_exists($cachedir)) {
-    mkdir($cachedir, 0755, true);
-    unlink(unzip(download($url), $cachedir));
-    install_dependencies("$cachedir/");
-  }
-  return $cachedir;
+    $cachedir = INSTALL_DEPENDENCIES_HOME . '/' . hash_url($url);
+    if (!file_exists($cachedir)) {
+        mkdir($cachedir, 0755, true);
+        unlink(unzip(download($url), $cachedir));
+        install_dependencies("$cachedir/");
+    }
+    return $cachedir;
 }
 
 
 function skip_initial_directory($directory)
 {
-  $files = glob("$directory/*");
-  return (1 === count($files) && is_dir($files[0])) ? $files[0] : $directory;
+    $files = glob("$directory/*");
+    return (1 === count($files) && is_dir($files[0])) ? $files[0] : $directory;
 }
 
 
 function install_link($target, $dest)
 {
-  if (is_link($dest))
-    unlink($dest);
-  if (!file_exists(dirname($dest)))
-    mkdir(dirname($dest), 0755, true);
-  symlink(realpath($target), $dest);
+    if (is_link($dest))
+        unlink($dest);
+    if (!file_exists(dirname($dest)))
+        mkdir(dirname($dest), 0755, true);
+    symlink(realpath($target), $dest);
 }
 
 
 function hash_url($url)
 {
-  return sha1(preg_replace('/#.+$/', '', $url));
+    return sha1(preg_replace('/#.+$/', '', $url));
 }
 
 
 function download($url)
 {
-  $ch = curl_init($url);
-  $filename = tempnam(sys_get_temp_dir(), 'dep');
-  $fp = fopen($filename, 'w');
-  curl_setopt($ch, CURLOPT_FILE, $fp);
-  curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-  curl_exec($ch);
-  curl_close($ch);
-  fclose($fp);
-  return $filename;
+    $ch = curl_init($url);
+    $filename = tempnam(sys_get_temp_dir(), 'dep');
+    $fp = fopen($filename, 'w');
+    curl_setopt($ch, CURLOPT_FILE, $fp);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_exec($ch);
+    curl_close($ch);
+    fclose($fp);
+    return $filename;
 }
 
 
 function unzip($filename, $destination)
 {
-  $zip = new ZipArchive();
-  $zip->open($filename);
-  $zip->extractTo($destination);
-  $zip->close();
-  return $filename;
+    $zip = new ZipArchive();
+    $zip->open($filename);
+    $zip->extractTo($destination);
+    $zip->close();
+    return $filename;
 }
 
+
+function read_json($filename)
+{
+    return json_decode(file_get_contents($filename));
+}
+
+
+function exception_error_handler($errno, $errstr, $errfile, $errline )
+{
+    throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
+}
+
+
+function exit_exception_handler($e)
+{
+    fwrite(STDERR, $e->getMessage() . "\n");
+    exit($e->getCode() ?: 1);
+}
