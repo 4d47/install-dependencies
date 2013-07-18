@@ -16,6 +16,8 @@ Example of a dependencies.json file
      {
        "library/Zend":
          "https://github.com/zendframework/zf1/archive/release-1.12.3.zip#library/Zend",
+       "library/PHPThumb":
+         "https://github.com/masterexploder/PHPThumb/archive/v1.0-final.zip#src",
        "modules/smoke-test":
          "https://bitbucket.org/mat/smoke-test/get/e519fae15059.zip#smoke-test"
      }
