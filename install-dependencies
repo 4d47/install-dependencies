@@ -2,6 +2,7 @@
 <?php
 define('INSTALL_DEPENDENCIES_HOME', getenv('INSTALL_DEPENDENCIES_HOME') ?: get_default_home());
 define('DEPFILE', 'dependencies.json');
+define('VERBOSE', true);
 
 set_error_handler('exception_error_handler');
 set_exception_handler('exit_exception_handler');
@@ -9,10 +10,10 @@ set_exception_handler('exit_exception_handler');
 install_dependencies();
 
 
-function install_dependencies($basedir = '')
+function install_dependencies($basedir = '.')
 {
-    foreach (read_dependeciesfile($basedir . DEPFILE) as $dest => $url) {
-        install_dependency($url, "$basedir$dest");
+    foreach (read_dependeciesfile($basedir . DIRECTORY_SEPARATOR . DEPFILE) as $dest => $url) {
+        install_dependency($url, $basedir . DIRECTORY_SEPARATOR . $dest);
     }
 }
 
@@ -30,16 +31,16 @@ function install_dependency($url, $dest)
 {
     $releasedir = skip_initial_directory(cache_release($url));
     $subpath = parse_url($url, PHP_URL_FRAGMENT);
-    install_link("$releasedir/$subpath", $dest);
+    install_link($releasedir . DIRECTORY_SEPARATOR . $subpath, $dest);
 }
 
 
 function cache_release($url)
 {
-    $cachedir = realpath(INSTALL_DEPENDENCIES_HOME . '/' . hash_url($url));
+    $cachedir = INSTALL_DEPENDENCIES_HOME . DIRECTORY_SEPARATOR . hash_url($url);
     if (!file_exists($cachedir)) {
         unlink(unzip(download($url), $cachedir));
-        install_dependencies("$cachedir/");
+        install_dependencies($cachedir);
     }
     return $cachedir;
 }
@@ -47,16 +48,18 @@ function cache_release($url)
 
 function skip_initial_directory($directory)
 {
-    $files = glob("$directory/*");
+    $files = glob($directory . DIRECTORY_SEPARATOR . '*');
     return (1 === count($files) && is_dir($files[0])) ? $files[0] : $directory;
 }
 
 
 function install_link($target, $dest)
 {
-    assert(file_exists($target), 'install_link');
-    if (is_link($dest))
-        unlink($dest);
+    info("linking $target to $dest");
+    assert(file_exists($target), "install_link $target");
+    if (file_exists($dest)) { // this needs to be worked out
+        is_windows() ? rmdir($dest) : unlink($dest);
+    }
     if (!file_exists(dirname($dest)))
         mkdir(dirname($dest), 0755, true);
     symlink($target, $dest);
@@ -71,6 +74,7 @@ function hash_url($url)
 
 function download($url)
 {
+    info("downloading $url");
     $ch = curl_init($url);
     $filename = tempnam(sys_get_temp_dir(), 'dep');
     $fp = fopen($filename, 'w');
@@ -87,11 +91,17 @@ function download($url)
 
 function unzip($filename, $destination)
 {
+    info("extracting $filename to $destination");
     mkdir($destination, 0755, true);
-    $zip = new ZipArchive();
-    $zip->open($filename);
-    $zip->extractTo($destination);
-    $zip->close();
+    try {
+        $zip = new ZipArchive();
+        $zip->open($filename);
+        $zip->extractTo($destination);
+        $zip->close();
+    } catch (Exception $e) {
+        rmdir($destination);
+        throw $e;
+    }
     return $filename;
 }
 
@@ -104,13 +114,27 @@ function read_json($filename)
 
 function get_default_home()
 {
-    return get_user_home() . '/.install-dependencies';
+    return get_user_home() . DIRECTORY_SEPARATOR . '.install-dependencies';
 }
 
 
 function get_user_home()
 {
-    return isset($_SERVER['USERPROFILE']) ? $_SERVER['USERPROFILE'] : $_SERVER['HOME'];
+    return is_windows() ? $_SERVER['USERPROFILE'] : $_SERVER['HOME'];
+}
+
+
+function is_windows()
+{
+    return strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+}
+
+
+function info($line)
+{
+    if (VERBOSE) {
+        echo "$line\n";
+    }
 }
 
 
