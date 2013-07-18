@@ -29,7 +29,7 @@ function read_dependeciesfile($filename)
 
 function install_dependency($url, $dest)
 {
-    $releasedir = skip_initial_directory(cache_release($url));
+    $releasedir = cache_release($url);
     $subpath = parse_url($url, PHP_URL_FRAGMENT);
     install_link($releasedir . DIRECTORY_SEPARATOR . $subpath, $dest);
 }
@@ -40,9 +40,9 @@ function cache_release($url)
     $cachedir = INSTALL_DEPENDENCIES_HOME . DIRECTORY_SEPARATOR . hash_url($url);
     if (!file_exists($cachedir)) {
         unlink(unzip(download($url), $cachedir));
-        install_dependencies($cachedir);
+        install_dependencies(skip_initial_directory($cachedir));
     }
-    return $cachedir;
+    return skip_initial_directory($cachedir);
 }
 
 
