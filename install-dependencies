@@ -1,6 +1,6 @@
 #!/usr/bin/env php
 <?php
-define('INSTALL_DEPENDENCIES_HOME', getenv('INSTALL_DEPENDENCIES_HOME') ?: "{$_SERVER['HOME']}/.install-dependencies");
+define('INSTALL_DEPENDENCIES_HOME', getenv('INSTALL_DEPENDENCIES_HOME') ?: get_default_home());
 define('DEPFILE', 'dependencies.json');
 
 set_error_handler('exception_error_handler');
@@ -36,9 +36,8 @@ function install_dependency($url, $dest)
 
 function cache_release($url)
 {
-    $cachedir = INSTALL_DEPENDENCIES_HOME . '/' . hash_url($url);
+    $cachedir = realpath(INSTALL_DEPENDENCIES_HOME . '/' . hash_url($url));
     if (!file_exists($cachedir)) {
-        mkdir($cachedir, 0755, true);
         unlink(unzip(download($url), $cachedir));
         install_dependencies("$cachedir/");
     }
@@ -55,11 +54,12 @@ function skip_initial_directory($directory)
 
 function install_link($target, $dest)
 {
+    assert(file_exists($target), 'install_link');
     if (is_link($dest))
         unlink($dest);
     if (!file_exists(dirname($dest)))
         mkdir(dirname($dest), 0755, true);
-    symlink(realpath($target), $dest);
+    symlink($target, $dest);
 }
 
 
@@ -75,16 +75,19 @@ function download($url)
     $filename = tempnam(sys_get_temp_dir(), 'dep');
     $fp = fopen($filename, 'w');
     curl_setopt($ch, CURLOPT_FILE, $fp);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     curl_exec($ch);
     curl_close($ch);
     fclose($fp);
+    assert(filesize($filename), 'download');
     return $filename;
 }
 
 
 function unzip($filename, $destination)
 {
+    mkdir($destination, 0755, true);
     $zip = new ZipArchive();
     $zip->open($filename);
     $zip->extractTo($destination);
@@ -99,6 +102,18 @@ function read_json($filename)
 }
 
 
+function get_default_home()
+{
+    return get_user_home() . '/.install-dependencies';
+}
+
+
+function get_user_home()
+{
+    return isset($_SERVER['USERPROFILE']) ? $_SERVER['USERPROFILE'] : $_SERVER['HOME'];
+}
+
+
 function exception_error_handler($errno, $errstr, $errfile, $errline )
 {
     throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
@@ -107,6 +122,6 @@ function exception_error_handler($errno, $errstr, $errfile, $errline )
 
 function exit_exception_handler($e)
 {
-    fwrite(STDERR, $e->getMessage() . "\n");
+    fwrite(STDERR, $e->getMessage() . ' on line ' . $e->getLine() . "\n");
     exit($e->getCode() ?: 1);
 }
