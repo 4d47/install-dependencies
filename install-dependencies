@@ -7,10 +7,10 @@ define('VERBOSE', true);
 set_error_handler('exception_error_handler');
 set_exception_handler('exit_exception_handler');
 
-install_dependencies();
+install_dependencies('.');
 
 
-function install_dependencies($basedir = '.')
+function install_dependencies($basedir)
 {
     foreach (read_dependeciesfile($basedir . DIRECTORY_SEPARATOR . DEPFILE) as $dest => $url) {
         install_dependency($url, $basedir . DIRECTORY_SEPARATOR . $dest);
@@ -18,57 +18,16 @@ function install_dependencies($basedir = '.')
 }
 
 
-function read_dependeciesfile($filename)
-{
-    $data = file_exists($filename) ? read_json($filename) : new stdClass();
-    if (!is_object($data))
-        throw new Exception(sprintf("Invalid json decoding of %s must be an object but got %s.", $filename, gettype($data)));
-    return $data;
-}
-
-
 function install_dependency($url, $dest)
-{
-    $releasedir = cache_release($url);
-    $subpath = parse_url($url, PHP_URL_FRAGMENT);
-    install_link($releasedir . DIRECTORY_SEPARATOR . $subpath, $dest);
-}
-
-
-function cache_release($url)
 {
     $cachedir = INSTALL_DEPENDENCIES_HOME . DIRECTORY_SEPARATOR . hash_url($url);
     if (!file_exists($cachedir)) {
         unlink(unzip(download($url), $cachedir));
         install_dependencies(skip_initial_directory($cachedir));
     }
-    return skip_initial_directory($cachedir);
-}
-
-
-function skip_initial_directory($directory)
-{
-    $files = glob($directory . DIRECTORY_SEPARATOR . '*');
-    return (1 === count($files) && is_dir($files[0])) ? $files[0] : $directory;
-}
-
-
-function install_link($target, $dest)
-{
-    info("linking $target to $dest");
-    assert(file_exists($target), "install_link $target");
-    if (file_exists($dest)) { // this needs to be worked out
-        is_windows() ? rmdir($dest) : unlink($dest);
-    }
-    if (!file_exists(dirname($dest)))
-        mkdir(dirname($dest), 0755, true);
-    symlink($target, $dest);
-}
-
-
-function hash_url($url)
-{
-    return sha1(preg_replace('/#.+$/', '', $url));
+    $releasedir = skip_initial_directory($cachedir);
+    $subpath = parse_url($url, PHP_URL_FRAGMENT);
+    install_link($releasedir . DIRECTORY_SEPARATOR . $subpath, $dest);
 }
 
 
@@ -103,6 +62,41 @@ function unzip($filename, $destination)
         throw $e;
     }
     return $filename;
+}
+
+
+function install_link($target, $dest)
+{
+    info("linking $target to $dest");
+    assert(file_exists($target), "install_link $target");
+    if (file_exists($dest)) { // this needs to be worked out
+        is_windows() ? rmdir($dest) : unlink($dest);
+    }
+    if (!file_exists(dirname($dest)))
+        mkdir(dirname($dest), 0755, true);
+    symlink($target, $dest);
+}
+
+
+function skip_initial_directory($directory)
+{
+    $files = glob($directory . DIRECTORY_SEPARATOR . '*');
+    return (1 === count($files) && is_dir($files[0])) ? $files[0] : $directory;
+}
+
+
+function hash_url($url)
+{
+    return sha1(preg_replace('/#.+$/', '', $url));
+}
+
+
+function read_dependeciesfile($filename)
+{
+    $data = file_exists($filename) ? read_json($filename) : new stdClass();
+    if (!is_object($data))
+        throw new Exception(sprintf("Invalid json decoding of %s must be an object but got %s.", $filename, gettype($data)));
+    return $data;
 }
 
 
