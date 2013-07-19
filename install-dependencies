@@ -69,9 +69,8 @@ function install_link($target, $dest)
 {
     info("linking $target to $dest");
     assert(file_exists($target), "install_link $target");
-    if (file_exists($dest)) { // this needs to be worked out
+    if (is_link($dest) || file_exists($dest)) // this needs to be worked out
         is_windows() ? rmdir($dest) : unlink($dest);
-    }
     if (!file_exists(dirname($dest)))
         mkdir(dirname($dest), 0755, true);
     symlink($target, $dest);
@@ -87,7 +86,7 @@ function skip_initial_directory($directory)
 
 function hash_url($url)
 {
-    return sha1(preg_replace('/#.+$/', '', $url));
+    return substr(sha1(preg_replace('/#.+$/', '', $url)), 0, 8);
 }
 
 
