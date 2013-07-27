@@ -13,8 +13,6 @@ The archives are downloaded only once and saved to
 `~/.install-dependencies` but you can change
 the location with `env INSTALL_DEPENDENCIES_HOME`.
 
-Currently only zip releases are supported.
-
 ```bash
 cat << 'JSON' > dependencies.json
 {
