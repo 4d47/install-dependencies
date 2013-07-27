@@ -20,14 +20,12 @@ function install_dependencies($basedir)
 
 function install_dependency($url, $dest)
 {
-    $cachedir = INSTALL_DEPENDENCIES_HOME . DIRECTORY_SEPARATOR . hash_url($url);
-    if (!file_exists($cachedir)) {
-        unlink(unzip(download($url), $cachedir));
-        install_dependencies(skip_initial_directory($cachedir));
+    $cache = INSTALL_DEPENDENCIES_HOME . DIRECTORY_SEPARATOR . hash_url($url);
+    if (!file_exists($cache)) {
+        unlink(install(download($url), $cache));
+        install_dependencies(skip_initial_directory($cache));
     }
-    $releasedir = skip_initial_directory($cachedir);
-    $subpath = parse_url($url, PHP_URL_FRAGMENT);
-    install_link($releasedir . DIRECTORY_SEPARATOR . $subpath, $dest);
+    install_link(release_dir($cache, $url), $dest);
 }
 
 
@@ -48,6 +46,24 @@ function download($url)
 }
 
 
+function install($filename, $destination)
+{
+    call_user_func(install_callback($filename), $filename, $destination);
+    return $filename;
+}
+
+
+function install_callback($filename)
+{
+    switch (mime_type_file($filename)) {
+    case 'application/zip':
+        return 'unzip';
+    default:
+        return 'copy';
+    }
+}
+
+
 function unzip($filename, $destination)
 {
     info("extracting $filename to $destination");
@@ -61,7 +77,6 @@ function unzip($filename, $destination)
         rmdir($destination);
         throw $e;
     }
-    return $filename;
 }
 
 
@@ -74,6 +89,23 @@ function install_link($target, $dest)
     if (!file_exists(dirname($dest)))
         mkdir(dirname($dest), 0755, true);
     symlink($target, $dest);
+}
+
+
+function mime_type_file($filename)
+{
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime_type = finfo_file($finfo, $filename);
+    finfo_close($finfo);
+    return $mime_type;
+}
+
+
+function release_dir($cache, $url)
+{
+    $path = skip_initial_directory($cache);
+    $sub = parse_url($url, PHP_URL_FRAGMENT);
+    return $sub ? $path . DIRECTORY_SEPARATOR . $sub : $path;
 }
 
 

@@ -22,10 +22,16 @@ cat << 'JSON' > dependencies.json
     "https://github.com/zendframework/zf1/archive/release-1.12.3.zip#library/Zend",
   "library/PHPThumb":
     "https://github.com/masterexploder/PHPThumb/archive/v1.0-final.zip#src",
-  "modules/smoke-test":
-    "https://bitbucket.org/mat/smoke-test/get/e519fae15059.zip#smoke-test"
+  "public/js/jquery.js":
+    "http://code.jquery.com/jquery-1.10.2.min.js"
 }
 JSON
 
 install-dependencies
 ```
+
+## todo
+
+- checksum after download
+- install tarballs
+
