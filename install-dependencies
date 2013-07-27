@@ -18,18 +18,19 @@ function install_dependencies($basedir)
 }
 
 
-function install_dependency($url, $dest)
+function install_dependency($source, $dest)
 {
+    list($checksum, $url) = unpack_source($source);
     $cache = INSTALL_DEPENDENCIES_HOME . DIRECTORY_SEPARATOR . hash_url($url);
     if (!file_exists($cache)) {
-        unlink(install(download($url), $cache));
+        unlink(install(download($url, $checksum), $cache));
         install_dependencies(skip_initial_directory($cache));
     }
     install_link(release_dir($cache, $url), $dest);
 }
 
 
-function download($url)
+function download($url, $checksum = false)
 {
     info("downloading $url");
     $ch = curl_init($url);
@@ -41,6 +42,9 @@ function download($url)
     curl_exec($ch);
     curl_close($ch);
     fclose($fp);
+    $filesum = sha1_file($filename);
+    info("sha1 = $filesum");
+    if ($checksum) assert($checksum == $filesum, 'checksum');
     assert(filesize($filename), 'download');
     return $filename;
 }
@@ -89,6 +93,16 @@ function install_link($target, $dest)
     if (!file_exists(dirname($dest)))
         mkdir(dirname($dest), 0755, true);
     symlink($target, $dest);
+}
+
+
+function unpack_source($url)
+{
+    $data = preg_split('/\s+/', $url);
+    if (1 == count($data)) {
+        array_unshift($data, false);
+    }
+    return $data;
 }
 
 
