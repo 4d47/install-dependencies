@@ -132,7 +132,7 @@ function skip_initial_directory($directory)
 
 function hash_url($url)
 {
-    return substr(sha1(preg_replace('/#.+$/', '', $url)), 0, 8);
+    return sha1(preg_replace('/#.+$/', '', $url));
 }
 
 
