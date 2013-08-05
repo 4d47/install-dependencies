@@ -43,7 +43,7 @@ function download($url, $checksum = false)
     curl_close($ch);
     fclose($fp);
     $filesum = sha1_file($filename);
-    info("sha1 = $filesum");
+    info("sha1_file $filesum");
     if ($checksum) assert($checksum == $filesum, 'checksum');
     assert(filesize($filename), 'download');
     return $filename;
