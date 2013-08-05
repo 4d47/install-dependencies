@@ -34,10 +34,10 @@ function download($url, $checksum = false)
 {
     info("downloading $url");
     $ch = curl_init($url);
-    $filename = tempnam(sys_get_temp_dir(), 'dep');
+    $filename = sys_get_temp_dir() . DIRECTORY_SEPARATOR . basename(parse_url($url, PHP_URL_PATH));
     $fp = fopen($filename, 'w');
     curl_setopt($ch, CURLOPT_FILE, $fp);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    //curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     curl_exec($ch);
     curl_close($ch);
@@ -52,8 +52,18 @@ function download($url, $checksum = false)
 
 function install($filename, $dest)
 {
-    call_user_func(install_callback($filename), $filename, $dest);
-    return $filename;
+    info("extracting $dest");
+    mkdir($dest, 0755, true);
+    try {
+        do {
+            $last_filename = $filename;
+            $filename = call_user_func(install_callback($filename), $filename, $dest);
+        } while ($filename);
+    } catch (Exception $e) {
+        rmdir($dest);
+        throw $e;
+    }
+    return $last_filename;
 }
 
 
@@ -62,6 +72,10 @@ function install_callback($filename)
     switch (mime_type_file($filename)) {
     case 'application/zip':
         return 'unzip';
+    case 'application/x-tar':
+        return 'untar';
+    case 'application/x-gzip':
+        return 'ungzip';
     default:
         return 'copy';
     }
@@ -70,17 +84,25 @@ function install_callback($filename)
 
 function unzip($filename, $dest)
 {
-    info("extracting $dest");
-    mkdir($dest, 0755, true);
-    try {
-        $zip = new ZipArchive();
-        $zip->open($filename);
-        $zip->extractTo($dest);
-        $zip->close();
-    } catch (Exception $e) {
-        rmdir($dest);
-        throw $e;
-    }
+    $zip = new ZipArchive();
+    $zip->open($filename);
+    $zip->extractTo($dest);
+    $zip->close();
+}
+
+
+function ungzip($filename, $dest)
+{
+    $p = new PharData($filename);
+    $p->decompress();
+    return fileinfo($filename, PATHINFO_FILENAME);
+}
+
+
+function untar($filename, $dest)
+{
+    $p = new PharData($filename);
+    $p->extractTo($dest);
 }
 
 
