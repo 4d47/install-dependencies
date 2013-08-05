@@ -50,9 +50,9 @@ function download($url, $checksum = false)
 }
 
 
-function install($filename, $destination)
+function install($filename, $dest)
 {
-    call_user_func(install_callback($filename), $filename, $destination);
+    call_user_func(install_callback($filename), $filename, $dest);
     return $filename;
 }
 
@@ -68,17 +68,17 @@ function install_callback($filename)
 }
 
 
-function unzip($filename, $destination)
+function unzip($filename, $dest)
 {
-    info("extracting $destination");
-    mkdir($destination, 0755, true);
+    info("extracting $dest");
+    mkdir($dest, 0755, true);
     try {
         $zip = new ZipArchive();
         $zip->open($filename);
-        $zip->extractTo($destination);
+        $zip->extractTo($dest);
         $zip->close();
     } catch (Exception $e) {
-        rmdir($destination);
+        rmdir($dest);
         throw $e;
     }
 }
@@ -88,7 +88,7 @@ function install_link($target, $dest)
 {
     info("linking $dest");
     assert(file_exists($target), "install_link $target");
-    if (is_link($dest) || file_exists($dest)) // this needs to be worked out
+    if (is_link($dest) || file_exists($dest))
         is_windows() ? rmdir($dest) : unlink($dest);
     if (!file_exists(dirname($dest)))
         mkdir(dirname($dest), 0755, true);
