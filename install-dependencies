@@ -70,7 +70,7 @@ function install_callback($filename)
 
 function unzip($filename, $destination)
 {
-    info("extracting $filename to $destination");
+    info("extracting $destination");
     mkdir($destination, 0755, true);
     try {
         $zip = new ZipArchive();
@@ -86,7 +86,7 @@ function unzip($filename, $destination)
 
 function install_link($target, $dest)
 {
-    info("linking $target to $dest");
+    info("linking $dest");
     assert(file_exists($target), "install_link $target");
     if (is_link($dest) || file_exists($dest)) // this needs to be worked out
         is_windows() ? rmdir($dest) : unlink($dest);
