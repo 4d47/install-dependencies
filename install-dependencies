@@ -32,7 +32,7 @@ function install_dependency($source, $dest)
 
 function download($url, $checksum = false)
 {
-    info("downloading $url");
+    info("Downloading $url");
     $ch = curl_init($url);
     $filename = tempnam(sys_get_temp_dir(), 'dep');
     $fp = fopen($filename, 'w');
@@ -43,7 +43,7 @@ function download($url, $checksum = false)
     curl_close($ch);
     fclose($fp);
     $filesum = sha1_file($filename);
-    info("sha1_file $filesum");
+    info("Checksum $filesum");
     if ($checksum) assert($checksum == $filesum, 'checksum');
     assert(filesize($filename), 'download');
     return $filename;
@@ -70,7 +70,7 @@ function install_callback($filename)
 
 function unzip($filename, $dest)
 {
-    info("extracting $dest");
+    info("Extracting $dest");
     mkdir($dest, 0755, true);
     try {
         $zip = new ZipArchive();
@@ -86,7 +86,7 @@ function unzip($filename, $dest)
 
 function install_link($target, $dest)
 {
-    info("linking $dest");
+    info("Linking $dest");
     assert(file_exists($target), "install_link $target");
     if (is_link($dest) || file_exists($dest))
         is_windows() ? rmdir($dest) : unlink($dest);
