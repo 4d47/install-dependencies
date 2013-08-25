@@ -53,6 +53,7 @@ function download($url, $checksum = false)
 function install($filename, $dest)
 {
     call_user_func(install_callback($filename), $filename, $dest);
+    readonly($dest);
     return $filename;
 }
 
@@ -61,16 +62,16 @@ function install_callback($filename)
 {
     switch (mime_type_file($filename)) {
     case 'application/zip':
-        return 'unzip';
+        return 'install_unzip';
     default:
-        return 'copy';
+        return 'install_copy';
     }
 }
 
 
-function unzip($filename, $dest)
+function install_unzip($filename, $dest)
 {
-    info("Extracting $dest");
+    info("Unzipping $dest");
     mkdir($dest, 0755, true);
     try {
         $zip = new ZipArchive();
@@ -81,6 +82,14 @@ function unzip($filename, $dest)
         rmdir($dest);
         throw $e;
     }
+}
+
+
+function install_copy($filename, $dest)
+{
+    info("Copying $dest");
+    mkdir(dirname($dest), 0755, true);
+    copy($filename, $dest);
 }
 
 
@@ -133,6 +142,12 @@ function skip_initial_directory($directory)
 function hash_url($url)
 {
     return sha1(preg_replace('/#.+$/', '', $url));
+}
+
+
+function readonly($filename) {
+    array_map('readonly', (array) glob("$filename/*"));
+    chmod($filename, fileperms($filename) & 0555);
 }
 
 
