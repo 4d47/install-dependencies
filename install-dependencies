@@ -32,7 +32,7 @@ function install_dependency($source, $dest)
 
 function download($url, $checksum = false)
 {
-    info("downloading $url");
+    info("Downloading $url");
     $ch = curl_init($url);
     $filename = tempnam(sys_get_temp_dir(), 'dep');
     $fp = fopen($filename, 'w');
@@ -43,16 +43,17 @@ function download($url, $checksum = false)
     curl_close($ch);
     fclose($fp);
     $filesum = sha1_file($filename);
-    info("sha1 = $filesum");
+    info("Checksum $filesum");
     if ($checksum) assert($checksum == $filesum, 'checksum');
     assert(filesize($filename), 'download');
     return $filename;
 }
 
 
-function install($filename, $destination)
+function install($filename, $dest)
 {
-    call_user_func(install_callback($filename), $filename, $destination);
+    call_user_func(install_callback($filename), $filename, $dest);
+    readonly($dest);
     return $filename;
 }
 
@@ -61,34 +62,42 @@ function install_callback($filename)
 {
     switch (mime_type_file($filename)) {
     case 'application/zip':
-        return 'unzip';
+        return 'install_unzip';
     default:
-        return 'copy';
+        return 'install_copy';
     }
 }
 
 
-function unzip($filename, $destination)
+function install_unzip($filename, $dest)
 {
-    info("extracting $filename to $destination");
-    mkdir($destination, 0755, true);
+    info("Unzipping $dest");
+    mkdir($dest, 0755, true);
     try {
         $zip = new ZipArchive();
         $zip->open($filename);
-        $zip->extractTo($destination);
+        $zip->extractTo($dest);
         $zip->close();
     } catch (Exception $e) {
-        rmdir($destination);
+        rmdir($dest);
         throw $e;
     }
 }
 
 
+function install_copy($filename, $dest)
+{
+    info("Copying $dest");
+    mkdir(dirname($dest), 0755, true);
+    copy($filename, $dest);
+}
+
+
 function install_link($target, $dest)
 {
-    info("linking $target to $dest");
+    info("Linking $dest");
     assert(file_exists($target), "install_link $target");
-    if (is_link($dest) || file_exists($dest)) // this needs to be worked out
+    if (is_link($dest) || file_exists($dest))
         is_windows() ? rmdir($dest) : unlink($dest);
     if (!file_exists(dirname($dest)))
         mkdir(dirname($dest), 0755, true);
@@ -132,7 +141,13 @@ function skip_initial_directory($directory)
 
 function hash_url($url)
 {
-    return substr(sha1(preg_replace('/#.+$/', '', $url)), 0, 8);
+    return sha1(preg_replace('/#.+$/', '', $url));
+}
+
+
+function readonly($filename) {
+    array_map('readonly', (array) glob("$filename/*"));
+    chmod($filename, fileperms($filename) & 0555);
 }
 
 

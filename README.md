@@ -1,12 +1,11 @@
-
-# The extra lightweight dependencies installer
+# Install Dependencies
 
 You define your dependencies in a file named `dependencies.json` at top
 of your project. This file is an object with properties defining the
-folders that needs code and values pointing to
+files that needs code and values pointing to
 urls of third-party release artifacts (with optional checksum).
 The fragment part in the url can be added to point a subdirectory
-in the release (eg a src/ folder).
+in the release zip (eg a src/ folder).
 
 Then run `install-dependencies`.
 
