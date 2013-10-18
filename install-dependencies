@@ -179,12 +179,22 @@ function info($line)
 
 function exception_error_handler($errno, $errstr, $errfile, $errline )
 {
+    $errstr = "$errstr on line $errline\n";
+    if (is_windows() && preg_match('/^symlink.*\(1314\)/', $errstr)) {
+        $errstr = "$errstr
+Creation of symbolic links requires the SeCreateSymbolicLinkPrivilege
+(\"Create symbolic links\"), which is granted only to administrators by default
+(but you can change that using security policy).
+
+Now that you know, you most likely just want to open a prompt as administrator.
+        ";
+    }
     throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
 }
 
 
 function exit_exception_handler($e)
 {
-    fwrite(STDERR, $e->getMessage() . ' on line ' . $e->getLine() . "\n");
+    fwrite(STDERR, $e->getMessage());
     exit($e->getCode() ?: 1);
 }
