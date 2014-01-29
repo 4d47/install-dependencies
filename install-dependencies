@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 define('INSTALL_DEPENDENCIES_HOME', getenv('INSTALL_DEPENDENCIES_HOME') ?: get_default_home());
-define('DEPFILE', 'dependencies.json');
+define('DEPFILE', 'dependencies');
 define('VERBOSE', true);
 
 set_error_handler('exception_error_handler');
@@ -20,7 +20,7 @@ function install_dependencies($basedir)
 
 function install_dependency($source, $dest)
 {
-    list($checksum, $url) = unpack_source($source);
+    list($url, $checksum) = unpack_source($source);
     $cache = INSTALL_DEPENDENCIES_HOME . DIRECTORY_SEPARATOR . hash_url($url);
     if (!file_exists($cache)) {
         unlink(install(download($url, $checksum), $cache));
@@ -88,7 +88,9 @@ function install_unzip($filename, $dest)
 function install_copy($filename, $dest)
 {
     info("Copying $dest");
-    mkdir(dirname($dest), 0755, true);
+    if (!file_exists(dirname($dest))) {
+        mkdir(dirname($dest), 0755, true);
+    }
     copy($filename, $dest);
 }
 
@@ -109,7 +111,7 @@ function unpack_source($url)
 {
     $data = preg_split('/\s+/', $url);
     if (1 == count($data)) {
-        array_unshift($data, false);
+        array_push($data, false);
     }
     return $data;
 }
@@ -153,16 +155,24 @@ function readonly($filename) {
 
 function read_dependeciesfile($filename)
 {
-    $data = file_exists($filename) ? read_json($filename) : new stdClass();
-    if (!is_object($data))
-        throw new Exception(sprintf("Invalid json decoding of %s must be an object but got %s.", $filename, gettype($data)));
-    return $data;
+    return file_exists($filename) ? read_dependencies($filename) : array();
 }
 
 
-function read_json($filename)
+function read_dependencies($filename)
 {
-    return json_decode(file_get_contents($filename));
+    $content = file_get_contents($filename);
+    $content = preg_replace('/^\s#.*$/m', '', $content);
+    $lines = preg_split('/\n/', $content);
+    $result = array();
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line) {
+            list($dest, $url) = preg_split('/\s+/', $line, 2);
+            $result[$dest] = trim($url);
+        }
+    }
+    return $result;
 }
 
 
