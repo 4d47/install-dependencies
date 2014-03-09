@@ -1,5 +1,12 @@
 # Install Dependencies
 
+## Install
+
+Copy `install-dependencies` script to your path.
+Make sure PHP is installed.
+
+## Usage
+
 You define your dependencies in a file named `dependencies` at top of your
 project. Listing files and third-party artifacts (with optional checksum).
 The fragment part in the url can be added to point a subdirectory in the
