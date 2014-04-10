@@ -2,7 +2,6 @@
 <?php
 define('INSTALL_DEPENDENCIES_HOME', getenv('INSTALL_DEPENDENCIES_HOME') ?: get_default_home());
 define('DEPFILE', 'dependencies');
-define('VERBOSE', true);
 
 set_error_handler('exception_error_handler');
 set_exception_handler('exit_exception_handler');
@@ -196,9 +195,7 @@ function is_windows()
 
 function info($line)
 {
-    if (VERBOSE) {
-        echo "$line\n";
-    }
+    echo "$line\n";
 }
 
 
