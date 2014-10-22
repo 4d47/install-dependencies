@@ -3,27 +3,36 @@
 ## Install
 
 Copy `install-dependencies` script to your path.
-Make sure PHP is installed.
+Make it executable and be sure PHP cli (yikes!) is installed.
 
 ## Usage
 
 You define your dependencies in a file named `dependencies` at top of your
-project. Listing files and third-party artifacts (with optional checksum).
-The fragment part in the url can be added to point a subdirectory in the
-release zip (eg a src/ folder).
+project. Listing files and third-party artifacts (with an optional checksum).
+The fragment part in the url can be added to point a subdirectory in an archive.
 
 Then run `install-dependencies`.
 
-The artifacts are downloaded once and saved to `~/.install-dependencies` but
-you can change the location with `env INSTALL_DEPENDENCIES_HOME`.
+The artifacts will be downloaded _once_, saved to `~/.install-dependencies` 
+and linked in the projet. You can change the location using `env INSTALL_DEPENDENCIES_HOME`.
+
+### Example
 
 ```bash
 cat << 'END' > dependencies
-# no .lock file, only fixed dependencies
+
+# Example file using old, unexciting dependencies.
+# First notice there is no .lock file, no semver, only fixed dependencies.
+
 library/Zend https://github.com/zendframework/zf1/archive/release-1.12.3.zip#library/Zend
-# install any subdirectory from a zip archive
+
+# So yeah it is not JSON, XML, YAML or whatever, it is a sucking, restrictive, 
+# homemade TEXT format (that supports comments!)
+# local-path url[#optional-subpath-if-url-is-an-archive] [optional-url-checksum]
+
 library/PHPThumb https://github.com/masterexploder/PHPThumb/archive/v1.0-final.zip#src
-# no centeral registry, install from any file on the internet
+
+# There is no centeral registry, accounts, registration, only the public Internet.
 public/js/jquery.js http://code.jquery.com/jquery-1.10.2.min.js 0511abe9863c2ea7084efa7e24d1d86c5b3974f1
 END
 
