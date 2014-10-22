@@ -7,7 +7,7 @@ Make it executable and be sure PHP cli (yikes!) is installed.
 
 ## Usage
 
-You define your dependencies in a file named `dependencies` at top of your
+You define your dependencies in a file named `Dependencies` at top of your
 project. Listing files and third-party artifacts (with an optional checksum).
 The fragment part in the url can be added to point a subdirectory in an archive.
 
@@ -19,7 +19,7 @@ and linked in the projet. You can change the location using `env INSTALL_DEPENDE
 ### Example
 
 ```bash
-cat << 'END' > dependencies
+cat << 'END' > Dependencies
 
 # Example file using old, unexciting dependencies.
 # First notice there is no .lock file, no semver, only fixed dependencies.

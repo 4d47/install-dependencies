@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 define('INSTALL_DEPENDENCIES_HOME', getenv('INSTALL_DEPENDENCIES_HOME') ?: get_default_home());
-define('DEPFILE', 'dependencies');
+define('INSTALL_DEPENDENCIES_FILE', getenv('INSTALL_DEPENDENCIES_FILE') ?: 'Dependencies');
 
 set_error_handler('exception_error_handler');
 set_exception_handler('exit_exception_handler');
@@ -11,7 +11,7 @@ install_dependencies('.');
 
 function install_dependencies($basedir)
 {
-    foreach (read_dependeciesfile($basedir . DIRECTORY_SEPARATOR . DEPFILE) as $dest => $url) {
+    foreach (read_dependeciesfile($basedir . DIRECTORY_SEPARATOR . INSTALL_DEPENDENCIES_FILE) as $dest => $url) {
         install_dependency($url, $basedir . DIRECTORY_SEPARATOR . $dest);
     }
 }
