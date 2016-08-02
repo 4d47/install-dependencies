@@ -2,16 +2,22 @@
 <?php
 define('INSTALL_DEPENDENCIES_HOME', getenv('INSTALL_DEPENDENCIES_HOME') ?: get_default_home());
 define('INSTALL_DEPENDENCIES_FILE', getenv('INSTALL_DEPENDENCIES_FILE') ?: 'Dependencies');
+define('SUPPORTED_ALGOS', 'sha256|sha384|sha512');
+
+assert(version_compare(PHP_VERSION, '5.6.0', '>='));
+assert(extension_loaded('curl'), 'curl extension required');
+assert(extension_loaded('hash'), 'hash extension required');
 
 set_error_handler('exception_error_handler');
 set_exception_handler('exit_exception_handler');
 
 install_dependencies('.');
+exit;
 
 
 function install_dependencies($basedir)
 {
-    foreach (read_dependeciesfile($basedir . DIRECTORY_SEPARATOR . INSTALL_DEPENDENCIES_FILE) as $dest => $url) {
+    foreach (read_dependenciesfile($basedir . DIRECTORY_SEPARATOR . INSTALL_DEPENDENCIES_FILE) as $dest => $url) {
         install_dependency($url, $basedir . DIRECTORY_SEPARATOR . $dest);
     }
 }
@@ -19,17 +25,17 @@ function install_dependencies($basedir)
 
 function install_dependency($source, $dest)
 {
-    list($url, $checksum) = unpack_source($source);
+    list($url, $algo, $checksum) = unpack_source($source);
     $cache = INSTALL_DEPENDENCIES_HOME . DIRECTORY_SEPARATOR . hash_url($url);
     if (!file_exists($cache)) {
-        unlink(install(download($url, $checksum), $cache));
+        unlink(install(download($url, $algo, $checksum), $cache));
         install_dependencies(skip_initial_directory($cache));
     }
     install_link(release_dir($cache, $url), $dest);
 }
 
 
-function download($url, $checksum = false)
+function download($url, $algo, $checksum)
 {
     info("Downloading $url");
     $ch = curl_init($url);
@@ -41,8 +47,8 @@ function download($url, $checksum = false)
     curl_exec($ch);
     curl_close($ch);
     fclose($fp);
-    $filesum = sha1_file($filename);
-    info("Checksum $filesum");
+    $filesum = checksum($filename, $algo);
+    info("Checksum $algo-$filesum");
     if ($checksum) assert($checksum == $filesum, 'checksum');
     assert(filesize($filename), 'download');
     return $filename;
@@ -109,10 +115,21 @@ function install_link($target, $dest)
 function unpack_source($url)
 {
     $data = preg_split('/\s+/', $url);
-    if (1 == count($data)) {
-        array_push($data, false);
+    assert(count($data) <= 2, "invalid url line: '$url'");
+    if (!empty($data[1]) && preg_match('/^('.SUPPORTED_ALGOS.')-(.+)/i', $data[1], $matches)) {
+        $data[1] = $matches[1];
+        $data[2] = $matches[2];
+    } else {
+        // use default, either checksum is invalid or not specified
+        array_push($data, strstr(SUPPORTED_ALGOS, '|', true), false);
     }
-    return $data;
+    return $data; // [ url algo checksum|false ]
+}
+
+
+function checksum($filename, $algo)
+{
+    return base64_encode(hash_file($algo, $filename, true));
 }
 
 
@@ -152,7 +169,7 @@ function readonly($filename) {
 }
 
 
-function read_dependeciesfile($filename)
+function read_dependenciesfile($filename)
 {
     return file_exists($filename) ? read_dependencies($filename) : array();
 }
@@ -160,8 +177,7 @@ function read_dependeciesfile($filename)
 
 function read_dependencies($filename)
 {
-    $content = file_get_contents($filename);
-    $content = preg_replace('/^\s#.*$/m', '', $content);
+    $content = strip_octothorpe(file_get_contents($filename));
     $lines = preg_split('/\n/', $content);
     $result = array();
     foreach ($lines as $line) {
@@ -174,6 +190,10 @@ function read_dependencies($filename)
     return $result;
 }
 
+function strip_octothorpe($string)
+{
+    return preg_replace('/^\s#.*$/m', '', $string);
+}
 
 function get_default_home()
 {

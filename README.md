@@ -26,14 +26,13 @@ cat << 'END' > Dependencies
 
 library/Zend https://github.com/zendframework/zf1/archive/release-1.12.3.zip#library/Zend
 
-# So yeah it is not JSON, XML, YAML or whatever, it is a sucking, restrictive, 
-# homemade TEXT format (that supports comments!)
+# So yeah it is homemade TEXT format
 # local-path url[#optional-subpath-if-url-is-an-archive] [optional-url-checksum]
 
 library/PHPThumb https://github.com/masterexploder/PHPThumb/archive/v1.0-final.zip#src
 
 # There is no centeral registry, accounts, registration, only the public Internet.
-public/js/jquery.js http://code.jquery.com/jquery-1.10.2.min.js 0511abe9863c2ea7084efa7e24d1d86c5b3974f1
+public/js/jquery.js http://code.jquery.com/jquery-1.10.2.min.js sha256-C6CB9UYIS9UJeqinPHWTHVqh/E1uhG5Twh+Y5qFQmYg=
 END
 
 install-dependencies
